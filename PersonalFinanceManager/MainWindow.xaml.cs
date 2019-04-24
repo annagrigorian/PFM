@@ -23,8 +23,12 @@ namespace PersonalFinanceManager
         public MainWindow()
         {
             InitializeComponent();
-            DatabaseInfo databaseInfo = new DatabaseInfo();
-            
+            DatabaseInfo databaseInfo = new DatabaseInfo();           
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

@@ -6,7 +6,20 @@
         xmlns:local="clr-namespace:PersonalFinanceManager"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
-    <Grid>
-        
+    <Grid Background="Gray"
+          >
+        <ListBox Background="Azure" HorizontalAlignment="Left" Height="344" Margin="29,40,0,0" VerticalAlignment="Top" Width="310"/>
+        <Button Background="Gray" Foreground="Azure"  Content="Cigarette" HorizontalAlignment="Left" Margin="395,40,0,0" VerticalAlignment="Top" Width="103"/>
+        <Button Background="Gray" Foreground="Azure" Content="Household Items" HorizontalAlignment="Left" Margin="395,65,0,0" VerticalAlignment="Top" Width="103"/>
+        <Button Background="Gray" Foreground="Azure" Content="Utility Fee" HorizontalAlignment="Left" Margin="395,90,0,0" VerticalAlignment="Top" Width="103"/>
+        <Button Background="Gray" Foreground="Azure" Content="Clothes" HorizontalAlignment="Left" Margin="395,115,0,0" VerticalAlignment="Top" Width="103" RenderTransformOrigin="-0.08,-0.1"/>
+        <Button Background="Gray" Foreground="Azure" Content="Cafe Fee" HorizontalAlignment="Left" Margin="395,140,0,0" VerticalAlignment="Top" Width="103"/>
+        <Button Background="Gray" Foreground="Azure" Content="Food" HorizontalAlignment="Left" Margin="395,165,0,0" VerticalAlignment="Top" Width="103"/>
+        <Button Background="Gray" Foreground="Azure" Content="Perfume" HorizontalAlignment="Left" Margin="395,190,0,0" VerticalAlignment="Top" Width="103"/>
+        <Button Background="Gray" Foreground="Azure" Content="Electronic Goods" HorizontalAlignment="Left" Margin="395,215,0,0" VerticalAlignment="Top" Width="103"/>
+        <Button Background="Gray" Foreground="Azure" Content="Furniture" HorizontalAlignment="Left" Margin="395,240,0,0" VerticalAlignment="Top" Width="103" RenderTransformOrigin="0.093,0.75"/>
+        <Button Background="Gray" Foreground="Azure" Content="Hygiene Products" HorizontalAlignment="Left" Margin="395,265,0,0" VerticalAlignment="Top" Width="103"/>
+        <Button Background="Gray" Foreground="Azure" Content="Medicine" HorizontalAlignment="Left" Margin="395,290,0,0" VerticalAlignment="Top" Width="103"/>
+
     </Grid>
 </Window>
