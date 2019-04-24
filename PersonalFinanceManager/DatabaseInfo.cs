@@ -24,8 +24,6 @@ namespace PersonalFinanceManager
         public DatabaseInfo()
         {
             EnsureDatabaseCreated();
-            AddCategories();
-            AddWallets();
         }
 
         private void EnsureDatabaseCreated()
@@ -68,6 +66,9 @@ namespace PersonalFinanceManager
                                 )";
                         command = new SqlCommand(query, connection);
                         command.ExecuteNonQuery();
+
+                        AddCategories();
+                        AddWallets();
 
                     }
                 }
@@ -121,17 +122,29 @@ namespace PersonalFinanceManager
 
                         int year = rd.Next(2015, 2019);
                         int month = rd.Next(1, 13);
-                        int day = rd.Next(1, 31);
+                        int day = rd.Next(1, 28);
                         string dayData = $"{year}-{month}-{day}"; //YYYY - MM - DD hh: mm: ss[.fractional seconds]
 
                         string datecreated = $"{DateTime.Now}";
 
+                        int randomCategory = rd.Next(0, 11);
 
+                        SqlCommand command = new SqlCommand("SELECT Id FROM PFM.dbo.Category", connection);
+
+                        
+                        SqlDataReader reader = command.ExecuteReader();
+                        string categoryId = "";
+                        while (reader.Read() && randomCategory >= 0)
+                        {
+                            randomCategory--;
+                            categoryId = reader[0].ToString();
+                        }
+                        reader.Close();
 
                         string query = "INSERT INTO PFM.dbo.Wallet(Amount,Day,DateCreated,CategoryId)" +
-                            $"VALUES('{amount}','{dayData}','{datecreated}', )";
+                        $"VALUES('{amount}','{dayData}','{datecreated}','{categoryId}')";
 
-                        SqlCommand command = new SqlCommand(query, connection);
+                        command = new SqlCommand(query, connection);
                         command.ExecuteNonQuery();
                     }
                 }
