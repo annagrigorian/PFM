@@ -10,5 +10,6 @@
         <Button Content="Calculate" HorizontalAlignment="Left" Margin="634,90,0,0" VerticalAlignment="Top" Width="75" Click="Calculate_Click"/>
         <DatePicker Name="startPicker" HorizontalAlignment="Left" Margin="485,50,0,0" VerticalAlignment="Top"/>
         <DatePicker Name="endPicker" HorizontalAlignment="Left" Margin="607,50,0,0" VerticalAlignment="Top"/>
+        <ListBox Name="listBox" HorizontalAlignment="Left" Height="290" Margin="10,26,0,0" VerticalAlignment="Top" Width="380" Visibility="Collapsed"/>
     </Grid>
 </Window>

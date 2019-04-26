@@ -24,15 +24,25 @@ namespace PersonalFinanceManager
         {
             InitializeComponent();
             DatabaseInfo databaseInfo = new DatabaseInfo();  
+
+            
             
         }
 
         private void Calculate_Click(object sender, RoutedEventArgs e)
         {
             DateTime start = startPicker.SelectedDate.Value;
-            DateTime end = endPicker.SelectedDate.Value;
-            
-            DataCalculation.Calculate(start, end);
+            DateTime end = endPicker.SelectedDate.Value;           
+           
+
+            var summaries = DataCalculation.Calculate(start, end);
+
+            listBox.Visibility = Visibility.Visible;
+
+            foreach (var summary in summaries)
+            {
+                listBox.Items.Add(summary.Day + "\t" + summary.Total);
+            }
         }
     }
 }
