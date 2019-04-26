@@ -28,7 +28,6 @@ namespace PersonalFinanceManager
 
         private void EnsureDatabaseCreated()
         {
-
             string query = $"SELECT database_id FROM sys.databases WHERE Name= '{databaseName}'";
             using (var connection = new SqlConnection(builder.ConnectionString))
             {
@@ -74,9 +73,12 @@ namespace PersonalFinanceManager
                 }
                 catch (Exception e)
                 {
-                    //MessageBox.Show(builder.ConnectionString);
                     MessageBox.Show(e.Message);
                     throw;
+                }
+                finally
+                {
+                    command.Dispose();
                 }
             }
         }
@@ -130,7 +132,6 @@ namespace PersonalFinanceManager
                         int randomCategory = rd.Next(0, 11);
 
                         SqlCommand command = new SqlCommand("SELECT Id FROM PFM.dbo.Category", connection);
-
                         
                         SqlDataReader reader = command.ExecuteReader();
                         string categoryId = "";
