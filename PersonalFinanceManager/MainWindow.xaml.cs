@@ -23,17 +23,13 @@ namespace PersonalFinanceManager
         public MainWindow()
         {
             InitializeComponent();
-            DatabaseInfo databaseInfo = new DatabaseInfo();  
-
-            
-            
+            DatabaseInfo databaseInfo = new DatabaseInfo();          
         }
 
         private void Calculate_Click(object sender, RoutedEventArgs e)
         {
             DateTime start = startPicker.SelectedDate.Value;
-            DateTime end = endPicker.SelectedDate.Value;           
-           
+            DateTime end = endPicker.SelectedDate.Value;
 
             var summaries = DataCalculation.Calculate(start, end);
 

@@ -143,10 +143,12 @@ namespace PersonalFinanceManager
 
                     string sql = "";
                     int year1 = 2018;
+                    int year2 = 2019;
 
                     for (int month = 1; month <= 12; month++)
                     {
                         sql = $"INSERT INTO PFM.[dbo].[Wallet] ([KindOfTurnover], [Amount], [Day],[CategoryId]) VALUES(1, {750000}, '{year1}-{month.ToString().PadLeft(2, '0')}-01','{Categories["Salary"]}')";
+                        sql = $"INSERT INTO PFM.[dbo].[Wallet] ([KindOfTurnover], [Amount], [Day],[CategoryId]) VALUES(1, {750000}, '{year2}-{month.ToString().PadLeft(2, '0')}-01','{Categories["Salary"]}')";
                     }
 
                     using (SqlCommand command = new SqlCommand(sql,connection))
@@ -156,11 +158,11 @@ namespace PersonalFinanceManager
 
                     for (int i = 0; i < 10_000; i++)
                     {
-                        decimal amount = rd.Next(1_000, 5_000);
+                        decimal amount = rd.Next(0, 5_000);
 
-                        int year = rd.Next(2015, 2019);
+                        int year = rd.Next(2018, 2020);
                         int month = rd.Next(1, 13);
-                        int day = rd.Next(1, 28);
+                        int day = rd.Next(2, 28);
                         string dayData = $"{year}-{month}-{day}"; //YYYY - MM - DD hh: mm: ss[.fractional seconds]
 
                         string datecreated = $"{DateTime.Now}";
