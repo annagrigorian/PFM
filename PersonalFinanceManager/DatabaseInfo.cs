@@ -38,17 +38,85 @@ namespace PersonalFinanceManager
         public DatabaseInfo()
         {
             EnsureDatabaseCreated();
+            //EnsureDatabaseCreatedAsync().Wait();
         }
 
-        private void EnsureDatabaseCreated()
+        private async Task EnsureDatabaseCreatedAsync()
         {
+            //SqlTransaction connectionTransaction = null;
             string query = $"SELECT database_id FROM sys.databases WHERE Name= '{databaseName}'";
             using (var connection = new SqlConnection(builder.ConnectionString))
             {
                 var command = new SqlCommand(query, connection);
                 try
                 {
-                    connection.Open();
+                    await connection.OpenAsync();
+                   // connectionTransaction = connection.BeginTransaction();
+                    var result = command.ExecuteScalarAsync();
+                    if (result == null)
+                    {
+                        builder.InitialCatalog = "PFM";
+
+                        query = $"CREATE DATABASE {databaseName}";
+                        command = new SqlCommand(query, connection);
+                        await command.ExecuteNonQueryAsync();
+
+                        query = $@"CREATE TABLE {databaseName}.dbo.{table1Name}
+                                (
+                                [Id] UNIQUEIDENTIFIER NOT NULL PRIMARY KEY,
+                                [Kind] [bit] NOT NULL,
+                                [Title] [nvarchar](MAX) NOT NULL,
+                                )";
+                        command = new SqlCommand(query, connection);
+                        await command.ExecuteNonQueryAsync();
+                      
+
+                        query = $@"CREATE TABLE {databaseName}.dbo.{table2Name}
+                                (
+                                [Id] [int] IDENTITY PRIMARY KEY,
+                                [Amount] [money] NOT NULL,                                
+                                [Comment] [nvarchar](200) NULL,
+                                [Day] [datetime2](7) NOT NULL,
+                                [DateCreated] [datetime2](7) NOT NULL DEFAULT getdate(),
+                                [KindOfTurnover] bit NOT NULL,
+                                [CategoryId] UNIQUEIDENTIFIER NOT NULL FOREIGN KEY REFERENCES [dbo].[Category] ([Id]) ON DELETE CASCADE ON UPDATE CASCADE                             
+                                )";
+                        command = new SqlCommand(query, connection);
+                        await command.ExecuteNonQueryAsync();
+
+                        //await AddCategoriesAsync();
+                        //await AddWalletsAsync();
+                        AddCategories();
+                        AddWallets();
+                    
+
+                       // connectionTransaction.Commit();
+                    }
+                }
+                catch (Exception e)
+                {
+                   // connectionTransaction.Rollback();
+                    MessageBox.Show(e.Message);
+                    throw;
+                }
+                finally
+                {
+                    command.Dispose();
+                }
+            }
+        }
+
+        private void EnsureDatabaseCreated()
+        {
+            //SqlTransaction connectionTransaction = null;
+            string query = $"SELECT database_id FROM sys.databases WHERE Name= '{databaseName}'";
+            using (var connection = new SqlConnection(builder.ConnectionString))
+            {
+                var command = new SqlCommand(query, connection);
+                try
+                {
+                     connection.Open();
+                    // connectionTransaction = connection.BeginTransaction();
                     var result = command.ExecuteScalar();
                     if (result == null)
                     {
@@ -67,6 +135,7 @@ namespace PersonalFinanceManager
                         command = new SqlCommand(query, connection);
                         command.ExecuteNonQuery();
 
+
                         query = $@"CREATE TABLE {databaseName}.dbo.{table2Name}
                                 (
                                 [Id] [int] IDENTITY PRIMARY KEY,
@@ -79,19 +148,24 @@ namespace PersonalFinanceManager
                                 )";
                         command = new SqlCommand(query, connection);
                         command.ExecuteNonQuery();
-
+                       
                         AddCategories();
                         AddWallets();
+
+
+                        // connectionTransaction.Commit();
                     }
                 }
                 catch (Exception e)
                 {
+                    // connectionTransaction.Rollback();
                     MessageBox.Show(e.Message);
                     throw;
                 }
                 finally
                 {
                     command.Dispose();
+                    connection.Close();
                 }
             }
         }
@@ -113,7 +187,7 @@ namespace PersonalFinanceManager
 
                         command = new SqlCommand(query, connection);
 
-                        command.ExecuteNonQuery();
+                         command.ExecuteNonQuery();
                     }
 
                     query = $@"UPDATE [dbo].[Category]
@@ -141,129 +215,149 @@ namespace PersonalFinanceManager
                 {
                     connection.Open();
 
-                    string sql = "";
+                    StringBuilder sql = new StringBuilder();
                     int year1 = 2018;
                     int year2 = 2019;
+                    int ifspend;
+                    decimal amount;
+                    string datecreated = $"{DateTime.Now}";
 
-                    for (int month = 1; month <= 12; month++)
+                    for (int year = year1; year <= year2; year++)
                     {
-                        sql = $"INSERT INTO PFM.[dbo].[Wallet] ([KindOfTurnover], [Amount], [Day],[CategoryId]) VALUES(1, {750000}, '{year1}-{month.ToString().PadLeft(2, '0')}-01','{Categories["Salary"]}')";
-                        sql = $"INSERT INTO PFM.[dbo].[Wallet] ([KindOfTurnover], [Amount], [Day],[CategoryId]) VALUES(1, {750000}, '{year2}-{month.ToString().PadLeft(2, '0')}-01','{Categories["Salary"]}')";
+                        for (int month = 1; month <= 12; month++)
+                        {
+                            sql.AppendLine($"INSERT INTO [dbo].[Wallet] ([CategoryId], [Amount], [Day],[KindOfTurnover]) VALUES('{Categories["Salary"]}', {750000}, '{year}-{month.ToString().PadLeft(2, '0')}-01',1);");
+
+                            for (int day = 1; day <= DateTime.DaysInMonth(year, month); day++)
+                            {
+                                sql.AppendLine($"INSERT INTO [dbo].[Wallet] ([CategoryId], [Amount], [Day],[KindOfTurnover]) VALUES('{Categories["Food"]}', {rd.Next(10, 50) * 100}, '{year}-{month}-{day}',0);");
+
+                                ifspend = rd.Next(0, 2);
+                                amount = rd.Next(1, 5) * 1000;
+
+                                if (ifspend == 0)
+                                {
+                                    sql.AppendLine("INSERT INTO PFM.dbo.Wallet(Amount,Day,DateCreated,CategoryId,KindOfTurnover)" +
+                                   $"VALUES('{amount}','{year}-{month}-{day}','{datecreated}','{Categories["Food"]}',0)");
+                                }
+
+                                ifspend = rd.Next(0, 2);
+                                amount = rd.Next(1, 5) * 1000;
+
+                                if (ifspend == 0)
+                                {
+                                    sql.AppendLine("INSERT INTO PFM.dbo.Wallet(Amount,Day,DateCreated,CategoryId,KindOfTurnover)" +
+                                   $"VALUES('{amount}','{year}-{month}-{day}','{datecreated}','{Categories["Gasoline"]}',0)");
+                                }
+
+                                ifspend = rd.Next(0, 2);
+                                amount = rd.Next(0, 5) * 1000;
+
+                                if (ifspend == 0)
+                                {
+                                    sql.AppendLine("INSERT INTO PFM.dbo.Wallet(Amount,Day,DateCreated,CategoryId,KindOfTurnover)" +
+                                   $"VALUES('{amount}','{year}-{month}-{day}','{datecreated}','{Categories["Gasoline"]}',0)");
+                                }
+
+                                ifspend = rd.Next(0, 2);
+                                amount = rd.Next(0, 5) * 100;
+
+                                if (ifspend == 0)
+                                {
+                                    sql.AppendLine("INSERT INTO PFM.dbo.Wallet(Amount,Day,DateCreated,CategoryId,KindOfTurnover)" +
+                                   $"VALUES('{amount}','{year}-{month}-{day}','{datecreated}','{Categories["Utility Fee"]}',0)");
+                                }
+
+                                ifspend = rd.Next(0, 2);
+                                amount = rd.Next(0, 5) * 100;
+
+                                if (ifspend == 0)
+                                {
+                                    sql.AppendLine("INSERT INTO PFM.dbo.Wallet(Amount,Day,DateCreated,CategoryId,KindOfTurnover)" +
+                                   $"VALUES('{amount}','{year}-{month}-{day}','{datecreated}','{Categories["Household Items"]}',0)");
+                                }
+
+                                ifspend = rd.Next(0, 2);
+                                amount = rd.Next(0, 4) * 100;
+
+                                if (ifspend == 0)
+                                {
+                                    sql.AppendLine("INSERT INTO PFM.dbo.Wallet(Amount,Day,DateCreated,CategoryId,KindOfTurnover)" +
+                                   $"VALUES('{amount}','{year}-{month}-{day}','{datecreated}','{Categories["Medicine"]}',0)");
+                                }
+
+                                ifspend = rd.Next(0, 2);
+                                amount = rd.Next(1, 7) * 1000;
+
+                                if (ifspend == 0)
+                                {
+                                    sql.AppendLine("INSERT INTO PFM.dbo.Wallet(Amount,Day,DateCreated,CategoryId,KindOfTurnover)" +
+                                   $"VALUES('{amount}','{year}-{month}-{day}','{datecreated}','{Categories["Clothes"]}',0)");
+                                }
+
+                                ifspend = rd.Next(0, 2);
+                                amount = rd.Next(1, 7) * 1000;
+
+                                if (ifspend == 0)
+                                {
+                                    sql.AppendLine("INSERT INTO PFM.dbo.Wallet(Amount,Day,DateCreated,CategoryId,KindOfTurnover)" +
+                                   $"VALUES('{amount}','{year}-{month}-{day}','{datecreated}','{Categories["Entertainment"]}',0)");
+                                }
+
+                                ifspend = rd.Next(0, 2);
+                                amount = rd.Next(1, 7) * 1000;
+
+                                if (ifspend == 0)
+                                {
+                                    sql.AppendLine("INSERT INTO PFM.dbo.Wallet(Amount,Day,DateCreated,CategoryId,KindOfTurnover)" +
+                                   $"VALUES('{amount}','{year}-{month}-{day}','{datecreated}','{Categories["Hygiene Products"]}',0)");
+                                }
+                            }
+                        }
                     }
 
-                    using (SqlCommand command = new SqlCommand(sql,connection))
+                    using (SqlCommand command = new SqlCommand(sql.ToString(), connection))
                     {
                         command.ExecuteNonQuery();
                     }
+                }
 
-                    for (int i = 0; i < 10_000; i++)
+                catch (Exception exception)
+                {
+                    MessageBox.Show(exception.Message);
+                    throw;
+                }
+            }
+        }
+
+        private async Task AddCategoriesAsync()
+        {
+            using (var connection = new SqlConnection(builder.ConnectionString))
+            {
+                try
+                {
+                    await connection.OpenAsync();
+
+                    string query;
+                    SqlCommand command;
+
+                    foreach (var category in Categories)
                     {
-                        decimal amount = rd.Next(0, 5_000);
+                        query = $"INSERT INTO [dbo].[Category]([Id], [Title],[Kind]) VALUES('{category.Value}', '{category.Key}',0)";
 
-                        int year = rd.Next(2018, 2020);
-                        int month = rd.Next(1, 13);
-                        int day = rd.Next(2, 28);
-                        string dayData = $"{year}-{month}-{day}"; //YYYY - MM - DD hh: mm: ss[.fractional seconds]
+                        command = new SqlCommand(query, connection);
 
-                        string datecreated = $"{DateTime.Now}";
-
-                        SqlCommand command;
-
-                        int ifspend = rd.Next(0, 2);
-
-                        if (ifspend == 0)
-                        {
-                            string query = "INSERT INTO PFM.dbo.Wallet(Amount,Day,DateCreated,CategoryId,KindOfTurnover)" +
-                            $"VALUES('{amount}','{dayData}','{datecreated}','{Categories["Gasoline"]}',0)";
-
-                            command = new SqlCommand(query, connection);
-                            command.ExecuteNonQuery();
-                        }
-
-                        ifspend = rd.Next(0, 2);
-                        amount = rd.Next(1_000, 10_000);
-
-                        if (ifspend == 0)
-                        {
-                            string query = "INSERT INTO PFM.dbo.Wallet(Amount,Day,DateCreated,CategoryId,KindOfTurnover)" +
-                            $"VALUES('{amount}','{dayData}','{datecreated}','{Categories["Food"]}',0)";
-
-                            command = new SqlCommand(query, connection);
-                            command.ExecuteNonQuery();
-                        }
-
-                        ifspend = rd.Next(0, 2);
-                        amount = rd.Next(1_000, 2_000);
-
-                        if (ifspend == 0)
-                        {
-                            string query = "INSERT INTO PFM.dbo.Wallet(Amount,Day,DateCreated,CategoryId,KindOfTurnover)" +
-                            $"VALUES('{amount}','{dayData}','{datecreated}','{Categories["Utility Fee"]}',0)";
-
-                            command = new SqlCommand(query, connection);
-                            command.ExecuteNonQuery();
-                        }
-
-                        ifspend = rd.Next(0, 2);
-                        amount = rd.Next(0, 2_000);
-
-                        if (ifspend == 0)
-                        {
-                            string query = "INSERT INTO PFM.dbo.Wallet(Amount,Day,DateCreated,CategoryId,KindOfTurnover)" +
-                            $"VALUES('{amount}','{dayData}','{datecreated}','{Categories["Household Items"]}',0)";
-
-                            command = new SqlCommand(query, connection);
-                            command.ExecuteNonQuery();
-                        }
-
-                        ifspend = rd.Next(0, 2);
-                        amount = rd.Next(0, 800);
-
-                        if (ifspend == 0)
-                        {
-                            string query = "INSERT INTO PFM.dbo.Wallet(Amount,Day,DateCreated,CategoryId,KindOfTurnover)" +
-                            $"VALUES('{amount}','{dayData}','{datecreated}','{Categories["Medicine"]}',0)";
-
-                            command = new SqlCommand(query, connection);
-                            command.ExecuteNonQuery();
-                        }
-
-                        ifspend = rd.Next(0, 2);
-                        amount = rd.Next(0, 20_000);
-
-                        if (ifspend == 0)
-                        {
-                            string query = "INSERT INTO PFM.dbo.Wallet(Amount,Day,DateCreated,CategoryId,KindOfTurnover)" +
-                            $"VALUES('{amount}','{dayData}','{datecreated}','{Categories["Clothes"]}',0)";
-
-                            command = new SqlCommand(query, connection);
-                            command.ExecuteNonQuery();
-                        }
-
-                        ifspend = rd.Next(0, 2);
-                        amount = rd.Next(0, 20_000);
-
-                        if (ifspend == 0)
-                        {
-                            string query = "INSERT INTO PFM.dbo.Wallet(Amount,Day,DateCreated,CategoryId,KindOfTurnover)" +
-                            $"VALUES('{amount}','{dayData}','{datecreated}','{Categories["Entertainment"]}',0)";
-
-                            command = new SqlCommand(query, connection);
-                            command.ExecuteNonQuery();
-                        }
-
-                        ifspend = rd.Next(0, 2);
-                        amount = rd.Next(0, 1_000);
-
-                        if (ifspend == 0)
-                        {
-                            string query = "INSERT INTO PFM.dbo.Wallet(Amount,Day,DateCreated,CategoryId,KindOfTurnover)" +
-                            $"VALUES('{amount}','{dayData}','{datecreated}','{Categories["Hygiene Products"]}',0)";
-
-                            command = new SqlCommand(query, connection);
-                            command.ExecuteNonQuery();
-                        }
+                        await command.ExecuteNonQueryAsync();
                     }
+
+                    query = $@"UPDATE [dbo].[Category]
+                                    SET Kind = 1
+                                    WHERE Title = 'Salary'";
+
+                    command = new SqlCommand(query, connection);
+
+                    await command.ExecuteNonQueryAsync();
+
                 }
                 catch (Exception exception)
                 {
@@ -272,5 +366,129 @@ namespace PersonalFinanceManager
                 }
             }
         }
+
+        private async Task AddWalletsAsync()
+        {
+            using (SqlConnection connection = new SqlConnection(builder.ConnectionString))
+            {
+                try
+                {
+                    await connection.OpenAsync();
+
+                    StringBuilder sql = new StringBuilder();
+                    int year1 = 2018;
+                    int year2 = 2019;
+                    int ifspend;
+                    decimal amount;
+                    string datecreated = $"{DateTime.Now}";
+
+                    for (int year = year1; year <= year2; year++)
+                    {
+                        for (int month = 1; month <= 12; month++)
+                        {
+                            sql.AppendLine($"INSERT INTO [dbo].[Wallet] ([CategoryId], [Amount], [Day],[KindOfTurnover]) VALUES('{Categories["Salary"]}', {750000}, '{year}-{month.ToString().PadLeft(2, '0')}-01',1);");
+
+                            for (int day = 1; day <= DateTime.DaysInMonth(year, month); day++)
+                            {
+                                sql.AppendLine($"INSERT INTO [dbo].[Wallet] ([CategoryId], [Amount], [Day],[KindOfTurnover]) VALUES('{Categories["Food"]}', {rd.Next(10, 50) * 100}, '{year}-{month}-{day}',0);");
+
+                                ifspend = rd.Next(0, 2);
+                                amount = rd.Next(1, 5) * 1000;
+
+                                if (ifspend == 0)
+                                {
+                                    sql.AppendLine("INSERT INTO PFM.dbo.Wallet(Amount,Day,DateCreated,CategoryId,KindOfTurnover)" +
+                                   $"VALUES('{amount}','{year}-{month}-{day}','{datecreated}','{Categories["Food"]}',0)");
+                                }
+
+                                ifspend = rd.Next(0, 2);
+                                amount = rd.Next(1, 5) * 1000;
+
+                                if (ifspend == 0)
+                                {
+                                    sql.AppendLine("INSERT INTO PFM.dbo.Wallet(Amount,Day,DateCreated,CategoryId,KindOfTurnover)" +
+                                   $"VALUES('{amount}','{year}-{month}-{day}','{datecreated}','{Categories["Gasoline"]}',0)");
+                                }
+
+                                ifspend = rd.Next(0, 2);
+                                amount = rd.Next(0, 5) * 1000;
+
+                                if (ifspend == 0)
+                                {
+                                    sql.AppendLine("INSERT INTO PFM.dbo.Wallet(Amount,Day,DateCreated,CategoryId,KindOfTurnover)" +
+                                   $"VALUES('{amount}','{year}-{month}-{day}','{datecreated}','{Categories["Gasoline"]}',0)");
+                                }
+
+                                ifspend = rd.Next(0, 2);
+                                amount = rd.Next(0, 5) * 100;
+
+                                if (ifspend == 0)
+                                {
+                                    sql.AppendLine("INSERT INTO PFM.dbo.Wallet(Amount,Day,DateCreated,CategoryId,KindOfTurnover)" +
+                                   $"VALUES('{amount}','{year}-{month}-{day}','{datecreated}','{Categories["Utility Fee"]}',0)");
+                                }
+
+                                ifspend = rd.Next(0, 2);
+                                amount = rd.Next(0, 5) * 100;
+
+                                if (ifspend == 0)
+                                {
+                                    sql.AppendLine("INSERT INTO PFM.dbo.Wallet(Amount,Day,DateCreated,CategoryId,KindOfTurnover)" +
+                                   $"VALUES('{amount}','{year}-{month}-{day}','{datecreated}','{Categories["Household Items"]}',0)");
+                                }
+
+                                ifspend = rd.Next(0, 2);
+                                amount = rd.Next(0, 4) * 100;
+
+                                if (ifspend == 0)
+                                {
+                                    sql.AppendLine("INSERT INTO PFM.dbo.Wallet(Amount,Day,DateCreated,CategoryId,KindOfTurnover)" +
+                                   $"VALUES('{amount}','{year}-{month}-{day}','{datecreated}','{Categories["Medicine"]}',0)");
+                                }
+
+                                ifspend = rd.Next(0, 2);
+                                amount = rd.Next(1, 7) * 1000;
+
+                                if (ifspend == 0)
+                                {
+                                    sql.AppendLine("INSERT INTO PFM.dbo.Wallet(Amount,Day,DateCreated,CategoryId,KindOfTurnover)" +
+                                   $"VALUES('{amount}','{year}-{month}-{day}','{datecreated}','{Categories["Clothes"]}',0)");
+                                }
+
+                                ifspend = rd.Next(0, 2);
+                                amount = rd.Next(1, 7) * 1000;
+
+                                if (ifspend == 0)
+                                {
+                                    sql.AppendLine("INSERT INTO PFM.dbo.Wallet(Amount,Day,DateCreated,CategoryId,KindOfTurnover)" +
+                                   $"VALUES('{amount}','{year}-{month}-{day}','{datecreated}','{Categories["Entertainment"]}',0)");
+                                }
+
+                                ifspend = rd.Next(0, 2);
+                                amount = rd.Next(1, 7) * 1000;
+
+                                if (ifspend == 0)
+                                {
+                                    sql.AppendLine("INSERT INTO PFM.dbo.Wallet(Amount,Day,DateCreated,CategoryId,KindOfTurnover)" +
+                                   $"VALUES('{amount}','{year}-{month}-{day}','{datecreated}','{Categories["Hygiene Products"]}',0)");
+                                }
+                            }
+                        }
+                    }
+
+                    using (SqlCommand command = new SqlCommand(sql.ToString(), connection))
+                    {
+                        await command.ExecuteNonQueryAsync();
+                    }
+                }
+
+                catch (Exception exception)
+                {
+                    MessageBox.Show(exception.Message);
+                    throw;
+                }
+            }
+        }
+
     }
 }

@@ -20,7 +20,7 @@ namespace PersonalFinanceManager
         {
             string connectionString = "Data Source=(localdb)\\mssqllocaldb;" +"Initial Catalog=PFM;" +"Integrated Security=true;";
 
-            string query = $@"SELECT Day, SUM(CASE WHEN KindOfTurnover = 1 THEN [Amount] ELSE -[Amount] END) AS Total
+            string query = $@"SELECT Day, SUM(CASE WHEN KindOfTurnover = 1 THEN  [Amount] ELSE -[Amount] END) AS Total
                         FROM PFM.dbo.Wallet                       
                         WHERE [Day] BETWEEN '{String.Format("{0:yyyy-MM-dd}", start)}' AND '{String.Format("{0:yyyy-MM-dd}",end)}'
                         GROUP BY [Day] 
@@ -50,6 +50,10 @@ namespace PersonalFinanceManager
                             summaries.Add(summary);
                         }
                     }
+                    //for (int i = 1; i < summaries.Count; i++)
+                    //{
+                    //    summaries[i].Total = summaries[i - 1].Total + summaries[i].Total;
+                    //}
                     return summaries;
                 }
                 catch (Exception exception)
