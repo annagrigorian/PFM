@@ -108,35 +108,37 @@ namespace PersonalFinanceManager
 
         private void EnsureDatabaseCreated()
         {
-            //SqlTransaction connectionTransaction = null;
+            SqlTransaction connectionTransaction = null;
+          
             string query = $"SELECT database_id FROM sys.databases WHERE Name= '{databaseName}'";
             using (var connection = new SqlConnection(builder.ConnectionString))
             {
                 var command = new SqlCommand(query, connection);
+                StringBuilder sql = new StringBuilder();
                 try
                 {
-                     connection.Open();
-                    // connectionTransaction = connection.BeginTransaction();
+                    connection.Open();
+                    command.Connection = connection;
+                   
+                    connectionTransaction = connection.BeginTransaction();
+                    command.Transaction = connectionTransaction;
+
                     var result = command.ExecuteScalar();
+
                     if (result == null)
                     {
                         builder.InitialCatalog = "PFM";
 
-                        query = $"CREATE DATABASE {databaseName}";
-                        command = new SqlCommand(query, connection);
-                        command.ExecuteNonQuery();
-
-                        query = $@"CREATE TABLE {databaseName}.dbo.{table1Name}
+                        sql.AppendLine($"CREATE DATABASE {databaseName}");
+                        
+                        sql.AppendLine($@"CREATE TABLE {databaseName}.dbo.{table1Name}
                                 (
                                 [Id] UNIQUEIDENTIFIER NOT NULL PRIMARY KEY,
                                 [Kind] [bit] NOT NULL,
                                 [Title] [nvarchar](MAX) NOT NULL,
-                                )";
-                        command = new SqlCommand(query, connection);
-                        command.ExecuteNonQuery();
-
-
-                        query = $@"CREATE TABLE {databaseName}.dbo.{table2Name}
+                                )");
+                       
+                        sql.AppendLine($@"CREATE TABLE {databaseName}.dbo.{table2Name}
                                 (
                                 [Id] [int] IDENTITY PRIMARY KEY,
                                 [Amount] [money] NOT NULL,                                
@@ -145,22 +147,32 @@ namespace PersonalFinanceManager
                                 [DateCreated] [datetime2](7) NOT NULL DEFAULT getdate(),
                                 [KindOfTurnover] bit NOT NULL,
                                 [CategoryId] UNIQUEIDENTIFIER NOT NULL FOREIGN KEY REFERENCES [dbo].[Category] ([Id]) ON DELETE CASCADE ON UPDATE CASCADE                             
-                                )";
-                        command = new SqlCommand(query, connection);
-                        command.ExecuteNonQuery();
+                                )");
+                        
                        
+                        command = new SqlCommand(sql.ToString(), connection);
+                        command.ExecuteNonQuery();
+                        connectionTransaction.Commit();
+
                         AddCategories();
                         AddWallets();
-
-
-                        // connectionTransaction.Commit();
+                        
+                        
                     }
                 }
                 catch (Exception e)
                 {
-                    // connectionTransaction.Rollback();
-                    MessageBox.Show(e.Message);
-                    throw;
+                    try
+                    {
+                        connectionTransaction.Rollback();
+                        MessageBox.Show(e.Message);
+                        throw;
+                    }
+                    catch (Exception exception)
+                    {
+                        MessageBox.Show(exception.Message);
+                        throw;
+                    } 
                 }
                 finally
                 {
