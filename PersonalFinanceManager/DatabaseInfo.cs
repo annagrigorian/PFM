@@ -148,16 +148,13 @@ namespace PersonalFinanceManager
                                 [KindOfTurnover] bit NOT NULL,
                                 [CategoryId] UNIQUEIDENTIFIER NOT NULL FOREIGN KEY REFERENCES [dbo].[Category] ([Id]) ON DELETE CASCADE ON UPDATE CASCADE                             
                                 )");
-                        
-                       
+                                              
                         command = new SqlCommand(sql.ToString(), connection);
-                        command.ExecuteNonQuery();
-                        connectionTransaction.Commit();
+                        command.ExecuteNonQuery();                       
 
                         AddCategories();
                         AddWallets();
-                        
-                        
+                        connectionTransaction.Commit();
                     }
                 }
                 catch (Exception e)
